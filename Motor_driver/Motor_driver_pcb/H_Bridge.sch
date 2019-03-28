@@ -3,7 +3,7 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 4 5
+Sheet 5 5
 Title ""
 Date ""
 Rev ""
@@ -21,7 +21,7 @@ AR Path="/5C9E3FC0/5C9E42AA" Ref="Q2"  Part="1"
 AR Path="/5C9F39FE/5C9E42AA" Ref="Q6"  Part="1" 
 AR Path="/5C9F4B73/5C9E42AA" Ref="Q10"  Part="1" 
 AR Path="/5C9F4B7D/5C9E42AA" Ref="Q14"  Part="1" 
-F 0 "Q10" H 4056 3046 50  0000 L CNN
+F 0 "Q14" H 4056 3046 50  0000 L CNN
 F 1 "IRF540N" H 4056 2955 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 4100 2925 50  0001 L CIN
 F 3 "http://www.irf.com/product-info/datasheets/data/irf540n.pdf" H 3850 3000 50  0001 L CNN
@@ -36,7 +36,7 @@ AR Path="/5C9E3FC0/5C9E4811" Ref="Q1"  Part="1"
 AR Path="/5C9F39FE/5C9E4811" Ref="Q5"  Part="1" 
 AR Path="/5C9F4B73/5C9E4811" Ref="Q9"  Part="1" 
 AR Path="/5C9F4B7D/5C9E4811" Ref="Q13"  Part="1" 
-F 0 "Q9" H 4056 2546 50  0000 L CNN
+F 0 "Q13" H 4056 2546 50  0000 L CNN
 F 1 "IRF9540N" H 4056 2455 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 4050 2425 50  0001 L CIN
 F 3 "http://www.irf.com/product-info/datasheets/data/irf9540n.pdf" H 3850 2500 50  0001 L CNN
@@ -53,7 +53,7 @@ AR Path="/5C9E3FC0/5C9E549E" Ref="D1"  Part="1"
 AR Path="/5C9F39FE/5C9E549E" Ref="D5"  Part="1" 
 AR Path="/5C9F4B73/5C9E549E" Ref="D9"  Part="1" 
 AR Path="/5C9F4B7D/5C9E549E" Ref="D13"  Part="1" 
-F 0 "D9" V 4454 2579 50  0000 L CNN
+F 0 "D13" V 4454 2579 50  0000 L CNN
 F 1 "1N4148" V 4545 2579 50  0000 L CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 4500 2325 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 4500 2500 50  0001 C CNN
@@ -68,7 +68,7 @@ AR Path="/5C9E3FC0/5C9E5F82" Ref="D2"  Part="1"
 AR Path="/5C9F39FE/5C9E5F82" Ref="D6"  Part="1" 
 AR Path="/5C9F4B73/5C9E5F82" Ref="D10"  Part="1" 
 AR Path="/5C9F4B7D/5C9E5F82" Ref="D14"  Part="1" 
-F 0 "D10" V 4454 3079 50  0000 L CNN
+F 0 "D14" V 4454 3079 50  0000 L CNN
 F 1 "1N4148" V 4545 3079 50  0000 L CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 4500 2825 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 4500 3000 50  0001 C CNN
@@ -99,7 +99,7 @@ AR Path="/5C9E3FC0/5C9E6D79" Ref="Q3"  Part="1"
 AR Path="/5C9F39FE/5C9E6D79" Ref="Q7"  Part="1" 
 AR Path="/5C9F4B73/5C9E6D79" Ref="Q11"  Part="1" 
 AR Path="/5C9F4B7D/5C9E6D79" Ref="Q15"  Part="1" 
-F 0 "Q11" H 6356 2454 50  0000 L CNN
+F 0 "Q15" H 6356 2454 50  0000 L CNN
 F 1 "IRF9540N" H 6300 2350 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 6350 2425 50  0001 L CIN
 F 3 "http://www.irf.com/product-info/datasheets/data/irf9540n.pdf" H 6150 2500 50  0001 L CNN
@@ -114,7 +114,7 @@ AR Path="/5C9E3FC0/5C9E8C92" Ref="Q4"  Part="1"
 AR Path="/5C9F39FE/5C9E8C92" Ref="Q8"  Part="1" 
 AR Path="/5C9F4B73/5C9E8C92" Ref="Q12"  Part="1" 
 AR Path="/5C9F4B7D/5C9E8C92" Ref="Q16"  Part="1" 
-F 0 "Q12" H 6356 2954 50  0000 L CNN
+F 0 "Q16" H 6356 2954 50  0000 L CNN
 F 1 "IRF540N" H 6300 2850 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 6400 2925 50  0001 L CIN
 F 3 "http://www.irf.com/product-info/datasheets/data/irf540n.pdf" H 6150 3000 50  0001 L CNN
@@ -129,7 +129,7 @@ AR Path="/5C9E3FC0/5C9EAA23" Ref="D3"  Part="1"
 AR Path="/5C9F39FE/5C9EAA23" Ref="D7"  Part="1" 
 AR Path="/5C9F4B73/5C9EAA23" Ref="D11"  Part="1" 
 AR Path="/5C9F4B7D/5C9EAA23" Ref="D15"  Part="1" 
-F 0 "D11" V 5454 2579 50  0000 L CNN
+F 0 "D15" V 5454 2579 50  0000 L CNN
 F 1 "1N4148" V 5545 2579 50  0000 L CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5500 2325 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 5500 2500 50  0001 C CNN
@@ -144,7 +144,7 @@ AR Path="/5C9E3FC0/5C9EC3FB" Ref="D4"  Part="1"
 AR Path="/5C9F39FE/5C9EC3FB" Ref="D8"  Part="1" 
 AR Path="/5C9F4B73/5C9EC3FB" Ref="D12"  Part="1" 
 AR Path="/5C9F4B7D/5C9EC3FB" Ref="D16"  Part="1" 
-F 0 "D12" V 5454 3079 50  0000 L CNN
+F 0 "D16" V 5454 3079 50  0000 L CNN
 F 1 "1N4148" V 5545 3079 50  0000 L CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5500 2825 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 5500 3000 50  0001 C CNN
