@@ -254,30 +254,11 @@ Text GLabel 8900 1050 2    50   Input ~ 0
 HV
 Text GLabel 8900 1950 2    50   Input ~ 0
 HV
-Text GLabel 8900 3150 2    50   Input ~ 0
-HV
-Text GLabel 8850 4650 2    50   Input ~ 0
-HV
 Wire Wire Line
 	2800 3350 2100 3350
 Wire Wire Line
 	2100 3350 2100 3650
-Wire Wire Line
-	3900 2050 3900 3750
-Wire Wire Line
-	3950 2150 3950 3650
 NoConn ~ 4450 1450
-$Comp
-L power:GND #PWR03
-U 1 1 5CA960B0
-P 2100 5050
-F 0 "#PWR03" H 2100 4800 50  0001 C CNN
-F 1 "GND" H 2105 4877 50  0000 C CNN
-F 2 "" H 2100 5050 50  0001 C CNN
-F 3 "" H 2100 5050 50  0001 C CNN
-	1    2100 5050
-	1    0    0    -1  
-$EndComp
 NoConn ~ 2100 4550
 NoConn ~ 2100 4750
 NoConn ~ 3700 4650
@@ -298,20 +279,6 @@ Wire Wire Line
 Wire Wire Line
 	2000 3350 2100 3350
 Connection ~ 2100 3350
-Connection ~ 3000 5350
-Wire Wire Line
-	3000 5350 3100 5350
-$Comp
-L power:GND #PWR05
-U 1 1 5CACBE84
-P 3000 5350
-F 0 "#PWR05" H 3000 5100 50  0001 C CNN
-F 1 "GND" H 3005 5177 50  0000 C CNN
-F 2 "" H 3000 5350 50  0001 C CNN
-F 3 "" H 3000 5350 50  0001 C CNN
-	1    3000 5350
-	1    0    0    -1  
-$EndComp
 $Comp
 L Connector:Conn_01x05_Male J11
 U 1 1 5CB0F92F
@@ -334,8 +301,6 @@ F 3 "~" H 8700 4200 50  0001 C CNN
 	1    8700 4200
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	8850 4200 9350 4200
 Text GLabel 8700 3950 0    50   Input ~ 0
 5V
 Text GLabel 8700 4450 0    50   Input ~ 0
@@ -629,8 +594,6 @@ NoConn ~ 4450 2250
 NoConn ~ 4450 2350
 NoConn ~ 4450 2650
 NoConn ~ 4450 2750
-NoConn ~ 4450 2850
-NoConn ~ 4450 2950
 NoConn ~ 4450 3050
 $Comp
 L Connector:Conn_01x04_Male J5
@@ -701,19 +664,11 @@ ENC2A
 Text GLabel 5250 1950 2    50   Input ~ 0
 ENC2B
 Wire Wire Line
-	3900 3750 3700 3750
-Wire Wire Line
-	3950 3650 3700 3650
-Wire Wire Line
 	4000 1850 4000 5450
 Wire Wire Line
 	4050 1950 4050 4450
 Wire Wire Line
 	4000 1850 4450 1850
-Wire Wire Line
-	3900 2050 4450 2050
-Wire Wire Line
-	3950 2150 4450 2150
 Wire Wire Line
 	4050 1950 4450 1950
 Wire Wire Line
@@ -733,23 +688,7 @@ Connection ~ 1700 950
 Wire Wire Line
 	1700 950  1800 950 
 Wire Wire Line
-	2900 5350 3000 5350
-Wire Wire Line
-	2700 5350 2900 5350
-Connection ~ 2900 5350
-$Comp
-L Interface_USB:FT232RL U2
-U 1 1 5C9D7AAD
-P 2900 4350
-F 0 "U2" H 2900 5531 50  0000 C CNN
-F 1 "FT232RL" H 2900 5440 50  0000 C CNN
-F 2 "Package_SO:SSOP-28_5.3x10.2mm_P0.65mm" H 2900 4350 50  0001 C CNN
-F 3 "http://www.ftdichip.com/Products/ICs/FT232RL.htm" H 2900 4350 50  0001 C CNN
-	1    2900 4350
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	1500 3750 1950 3750
+	1500 3750 1600 3750
 Wire Wire Line
 	1950 3750 1950 3300
 Wire Wire Line
@@ -798,4 +737,130 @@ Wire Wire Line
 	1800 950  1850 950 
 Wire Wire Line
 	3600 1400 3150 1400
+$Comp
+L power:GND #PWR0101
+U 1 1 5CA89C28
+P 9350 4200
+F 0 "#PWR0101" H 9350 3950 50  0001 C CNN
+F 1 "GND" V 9355 4072 50  0000 R CNN
+F 2 "" H 9350 4200 50  0001 C CNN
+F 3 "" H 9350 4200 50  0001 C CNN
+	1    9350 4200
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8850 4200 9050 4200
+Wire Wire Line
+	9050 3150 8900 3150
+Wire Wire Line
+	9050 3150 9050 4200
+Wire Wire Line
+	9050 4200 9050 4650
+Wire Wire Line
+	9050 4650 8850 4650
+Connection ~ 9050 4200
+$Comp
+L Interface_USB:FT232RL U2
+U 1 1 5C9D7AAD
+P 2900 4350
+F 0 "U2" H 2900 5531 50  0000 C CNN
+F 1 "FT232RL" H 2900 5440 50  0000 C CNN
+F 2 "Package_SO:SSOP-28_5.3x10.2mm_P0.65mm" H 2900 4350 50  0001 C CNN
+F 3 "http://www.ftdichip.com/Products/ICs/FT232RL.htm" H 2900 4350 50  0001 C CNN
+	1    2900 4350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2100 5050 2100 5350
+Wire Wire Line
+	2100 5350 2700 5350
+Connection ~ 2700 5350
+Wire Wire Line
+	2700 5350 2900 5350
+Connection ~ 2900 5350
+Wire Wire Line
+	2900 5350 3000 5350
+Connection ~ 3000 5350
+Wire Wire Line
+	3000 5350 3100 5350
+$Comp
+L power:GND #PWR0102
+U 1 1 5CAB0288
+P 2100 5350
+F 0 "#PWR0102" H 2100 5100 50  0001 C CNN
+F 1 "GND" H 2105 5177 50  0000 C CNN
+F 2 "" H 2100 5350 50  0001 C CNN
+F 3 "" H 2100 5350 50  0001 C CNN
+	1    2100 5350
+	1    0    0    -1  
+$EndComp
+Connection ~ 2100 5350
+Text GLabel 4800 4450 2    50   Input ~ 0
+SERVO1
+Text GLabel 4000 4750 2    50   Input ~ 0
+SERVO2
+NoConn ~ 4450 2050
+NoConn ~ 4450 2150
+Wire Wire Line
+	4450 2850 4200 2850
+Wire Wire Line
+	4200 2850 4200 3750
+Wire Wire Line
+	4200 3750 3700 3750
+Wire Wire Line
+	3700 3650 4150 3650
+Wire Wire Line
+	4150 3650 4150 2950
+Wire Wire Line
+	4150 2950 4450 2950
+$Comp
+L Device:C_Small C1
+U 1 1 5CAD538D
+P 1600 3650
+F 0 "C1" H 1692 3696 50  0000 L CNN
+F 1 "10n" H 1692 3605 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1600 3650 50  0001 C CNN
+F 3 "~" H 1600 3650 50  0001 C CNN
+	1    1600 3650
+	1    0    0    -1  
+$EndComp
+Connection ~ 1600 3750
+Wire Wire Line
+	1600 3750 1850 3750
+$Comp
+L power:GND #PWR0103
+U 1 1 5CAD5A18
+P 1600 3550
+F 0 "#PWR0103" H 1600 3300 50  0001 C CNN
+F 1 "GND" H 1605 3377 50  0000 C CNN
+F 2 "" H 1600 3550 50  0001 C CNN
+F 3 "" H 1600 3550 50  0001 C CNN
+	1    1600 3550
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:C_Small C2
+U 1 1 5CAD6164
+P 1850 3650
+F 0 "C2" H 1942 3696 50  0000 L CNN
+F 1 "4.7u" H 1942 3605 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm" H 1850 3650 50  0001 C CNN
+F 3 "~" H 1850 3650 50  0001 C CNN
+	1    1850 3650
+	1    0    0    -1  
+$EndComp
+Connection ~ 1850 3750
+Wire Wire Line
+	1850 3750 1950 3750
+$Comp
+L power:GND #PWR0104
+U 1 1 5CAD6A26
+P 1850 3550
+F 0 "#PWR0104" H 1850 3300 50  0001 C CNN
+F 1 "GND" H 1855 3377 50  0000 C CNN
+F 2 "" H 1850 3550 50  0001 C CNN
+F 3 "" H 1850 3550 50  0001 C CNN
+	1    1850 3550
+	-1   0    0    1   
+$EndComp
 $EndSCHEMATC
