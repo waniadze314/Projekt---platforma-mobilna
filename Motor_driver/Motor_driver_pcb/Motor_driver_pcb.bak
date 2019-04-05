@@ -863,4 +863,23 @@ F 3 "" H 1850 3550 50  0001 C CNN
 	1    1850 3550
 	-1   0    0    1   
 $EndComp
+$Comp
+L Connector:Conn_01x02_Male J?
+U 1 1 5CAF16CC
+P 3700 2650
+F 0 "J?" V 3762 2694 50  0000 L CNN
+F 1 "BT_module" V 3853 2694 50  0000 L CNN
+F 2 "" H 3700 2650 50  0001 C CNN
+F 3 "~" H 3700 2650 50  0001 C CNN
+	1    3700 2650
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	4200 2850 3700 2850
+Connection ~ 4200 2850
+Wire Wire Line
+	3600 2850 3600 2950
+Wire Wire Line
+	3600 2950 4150 2950
+Connection ~ 4150 2950
 $EndSCHEMATC
