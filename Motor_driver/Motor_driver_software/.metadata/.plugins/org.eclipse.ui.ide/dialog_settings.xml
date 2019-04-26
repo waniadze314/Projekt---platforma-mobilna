@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="ExternalProjectImportWizard">
+		<item value="false" key="WizardProjectsImportPage.STORE_NESTED_PROJECTS"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED"/>
+		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="D:\Projekt\Projekt---platforma-mobilna\Motor_driver\Motor_driver_software"/>
+			<item value="D:\Projekt\Projekt---platforma-mobilna\Motor_driver"/>
+			<item value="D:\Programowanie\test_systick"/>
+			<item value="D:\Projekt\Projekt---platforma-mobilna"/>
+			<item value="D:\Programowanie\Cube_projects"/>
+		</list>
+		<list key="WizardProjectsImportPage.STORE_ARCHIVES">
+			<item value=""/>
+		</list>
+	</section>
+</section>
