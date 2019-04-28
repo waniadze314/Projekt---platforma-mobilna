@@ -66,6 +66,16 @@ volatile uint16_t stepper_steps=0;
 volatile uint16_t encoder_one_pulses, encoder_two_pulses;
 volatile uint16_t systick_counter=0;
 
+//speed measure variables
+volatile uint32_t position_A_tmp_1, position_A_tmp_2, position_B_tmp_1, position_B_tmp_2, counts_A, counts_B;
+uint32_t position_dif_A[3];
+uint32_t position_dif_B[3];
+volatile uint8_t  measurement_counter=0;
+volatile uint8_t sampling;
+const uint8_t sampling_time=10;
+const uint8_t sampling_window=3;
+volatile float velocity_A, velocity_B;
+
 
 
 /* USER CODE END PV */
@@ -101,6 +111,7 @@ void stepper_left(uint8_t value);
 void stepper_right(uint8_t value);
 void stepper_position(uint8_t value);
 void ms_delay(uint16_t time);
+uint32_t min_array(uint32_t array[], uint8_t size);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -160,8 +171,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	encoder_one_pulses=TIM3->CNT;
-	encoder_two_pulses=TIM4->CNT;
+
 
 
 
@@ -510,28 +520,50 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 void HAL_SYSTICK_Callback(void){
+	//pomiar predkosci silnikow
+	if(sampling == 0){
+		position_A_tmp_1=TIM3->CNT;
+		position_B_tmp_1=TIM4->CNT;
+	}
+	sampling++;
+	if(sampling == sampling_time){
+		sampling=0;
+		position_A_tmp_2=TIM3->CNT;
+		position_B_tmp_2=TIM4->CNT;
+		position_dif_A[measurement_counter]=position_A_tmp_2-position_A_tmp_1;
+		position_dif_B[measurement_counter]=position_B_tmp_2-position_B_tmp_1;
+		measurement_counter++;
+		if(measurement_counter==sampling_window){
+			measurement_counter=0;
+			counts_A = min_array(position_dif_A, sampling_window);
+			counts_B = min_array(position_dif_B, sampling_window);
+		}
+	}
+
+
 	systick_counter++;
 	if(systick_counter>1000){
 		systick_counter=0;
-		HAL_GPIO_TogglePin(TEST_LED_GPIO_Port,TEST_LED_Pin);
+		uint8_t size = sprintf(data,"A vel: %d B vel: %d\n", counts_A, counts_B);
+		HAL_UART_Transmit_IT(&huart3, data, size);
+		HAL_GPIO_TogglePin(TEST_LED_GPIO_Port, TEST_LED_Pin);
 	}
-	//obroty krokowki w lewo
-	if(stepper_direction==1){
-		stepper_steps++;
-		stepper_output++;
-		if(stepper_output==5){
-			stepper_output=1;
-		}
-		HAL_GPIO_WritePin(GPIOB, step_high[stepper_steps-1],0);
-		HAL_GPIO_WritePin(GPIOB,step_high[stepper_steps],1);
-		if(stepper_steps==stepper_final_position){
-			stepper_direction=0;
-			stepper_steps=0;
-		}
-	}
-	//obroty krokowki w prawo
+//	//obroty krokowki w lewo
+//	if(stepper_direction==1){
+//		stepper_steps++;
+//		stepper_output++;
+//		if(stepper_output==5){
+//			stepper_output=1;
+//		}
+//		HAL_GPIO_WritePin(GPIOB, step_high[stepper_steps-1],0);
+//		HAL_GPIO_WritePin(GPIOB,step_high[stepper_steps],1);
+//		if(stepper_steps==stepper_final_position){
+//			stepper_direction=0;
+//			stepper_steps=0;
+//		}
+//	}
+//	obroty krokowki w prawo
 //	else if(stepper_direction==-1){
 //		stepper_steps--;
 //
@@ -550,6 +582,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 		command_counter++;
 	}
 	HAL_UART_Receive_IT(&huart3,&r_data,1);
+}
+
+uint32_t min_array(uint32_t array[], uint8_t size){
+	uint32_t tmp_min=array[0];
+	for(uint8_t elem=1;elem<size;elem++){
+		if(array[elem]<tmp_min){
+			tmp_min=array[elem];
+		}
+	}
+	return tmp_min;
 }
 
 void parse_command(volatile char* command){
@@ -751,6 +793,7 @@ void execute_command(char function, char parameter, uint8_t value){
 	default:	break;
 	}
 }
+
 
 
 /* USER CODE END 4 */
