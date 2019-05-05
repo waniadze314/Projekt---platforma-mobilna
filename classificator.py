@@ -20,7 +20,7 @@ from tqdm import tqdm
 class Recognizer(nn.HybridBlock):
     def __init__(self,**kwargs):
         super(Recognizer,self).__init__(**kwargs)
-        self.ctx = mx.cpu_shared() 
+        self.ctx = mx.cpu() 
 
         self.net = nn.HybridSequential()
         with self.net.name_scope():
