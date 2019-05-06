@@ -65,6 +65,7 @@ volatile int8_t stepper_output=0;
 volatile uint16_t stepper_steps=0;
 volatile uint16_t encoder_one_pulses, encoder_two_pulses;
 volatile uint16_t systick_counter=0;
+volatile uint16_t delay_counter;
 
 //speed measure variables
 volatile uint32_t position_A_tmp_1, position_A_tmp_2, position_B_tmp_1, position_B_tmp_2, counts_A, counts_B;
@@ -72,10 +73,15 @@ uint32_t position_dif_A[3];
 uint32_t position_dif_B[3];
 volatile uint8_t  measurement_counter=0;
 volatile uint8_t sampling;
-const uint8_t sampling_time=10;
+const uint8_t sampling_time=3;
 const uint8_t sampling_window=3;
-volatile float velocity_A, velocity_B;
-
+volatile uint8_t actual_speed_A, actual_speed_B;
+volatile uint8_t motor_A_direction=0;
+volatile uint8_t motor_B_direction=0;
+uint8_t enable_A_speed_regulation=0, enable_B_speed_regulation=0;
+volatile uint8_t target_speed_A, target_speed_B;
+const uint8_t speed_margin = 3;
+const uint8_t pwm_direction_offset = 125;
 
 
 /* USER CODE END PV */
@@ -93,7 +99,13 @@ void HAL_SYSTICK_Callback(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void parse_command(volatile char* command);
 void execute_command(char function, char parameter, uint8_t value);
+void set_initial_pwm();
 //instrukcje sterujace
+void set_speed_linear(uint8_t linear_speed);
+void set_speed_rotary(uint8_t roatry_speed);
+void set_speed_A(uint8_t A_speed);
+void set_speed_B(uint8_t B_speed);
+//rozkazy
 void move_forward(uint8_t value);
 void move_backward(uint8_t value);
 void turn_right(uint8_t value);
@@ -103,14 +115,13 @@ void turret_right(uint8_t value);
 void turret_up(uint8_t value);
 void turret_down(uint8_t value);
 void turret_position(uint8_t value);
-void motor_A_speed(uint8_t value);
-void motor_B_speed(uint8_t value);
-void servo_A_position(uint8_t value);
-void servo_B_position(uint8_t value);
+void servo_A_position(uint8_t angle);
+void servo_B_position(uint8_t angle);
 void stepper_left(uint8_t value);
 void stepper_right(uint8_t value);
 void stepper_position(uint8_t value);
-void ms_delay(uint16_t time);
+
+void delay_ms(uint16_t time);
 uint32_t min_array(uint32_t array[], uint8_t size);
 /* USER CODE END PFP */
 
@@ -163,19 +174,13 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim4,TIM_CHANNEL_ALL); //encoder B
   HAL_UART_Receive_IT(&huart3,&r_data,1); //begin receiving
 
-  motor_A_speed(50);
-  motor_B_speed(50);
+  set_initial_pwm();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-
-
-
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -239,9 +244,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 6399;
+  htim1.Init.Prescaler = 255;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 99;
+  htim1.Init.Period = 249;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -318,9 +323,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 1279;
+  htim2.Init.Prescaler = 639;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 999;
+  htim2.Init.Period = 1999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -528,7 +533,6 @@ void HAL_SYSTICK_Callback(void){
 	}
 	sampling++;
 	if(sampling == sampling_time){
-		sampling=0;
 		position_A_tmp_2=TIM3->CNT;
 		position_B_tmp_2=TIM4->CNT;
 		position_dif_A[measurement_counter]=position_A_tmp_2-position_A_tmp_1;
@@ -536,19 +540,74 @@ void HAL_SYSTICK_Callback(void){
 		measurement_counter++;
 		if(measurement_counter==sampling_window){
 			measurement_counter=0;
-			counts_A = min_array(position_dif_A, sampling_window);
-			counts_B = min_array(position_dif_B, sampling_window);
+			if(target_speed_A<50){
+				actual_speed_A = 255-min_array(position_dif_A, sampling_window);
+			}
+			else{
+				actual_speed_A = min_array(position_dif_A, sampling_window);
+			}
+			if(target_speed_B<50){
+				actual_speed_B = 255-min_array(position_dif_B, sampling_window);
+			}
+			else{
+				actual_speed_B = min_array(position_dif_B, sampling_window);
+			}
+
+/************************************************************************/
+
+
+//regulacja predkosci silnikow
+	if(enable_A_speed_regulation==1){
+			if(actual_speed_A-speed_margin<target_speed_A){
+				TIM1->CCR1++;
+				TIM1->CCR2++;
+			}else if(actual_speed_A+speed_margin>target_speed_A){
+				TIM1->CCR1--;
+				TIM1->CCR2--;
+			}
+	}
+
+	switch(motor_B_direction){
+		case 0:
+			if(enable_B_speed_regulation==1){
+					if(actual_speed_B-speed_margin<target_speed_B){
+						TIM1->CCR3++;
+						TIM1->CCR4++;
+					}else if(actual_speed_B+speed_margin>target_speed_B){
+						TIM1->CCR3--;
+						TIM1->CCR4--;
+					}
+			}
+			break;
+		case 1:
+			if(enable_B_speed_regulation==1){
+						if(actual_speed_B-speed_margin<target_speed_B){
+							TIM1->CCR3--;
+							TIM1->CCR4--;
+						}else if(actual_speed_B+speed_margin>target_speed_B){
+							TIM1->CCR3++;
+							TIM1->CCR4++;
+						}
+				}
+
 		}
+		sampling=0;
 	}
+}
+/**********************************************************************/
 
 
-	systick_counter++;
-	if(systick_counter>1000){
-		systick_counter=0;
-		uint8_t size = sprintf(data,"A vel: %d B vel: %d\n", counts_A, counts_B);
-		HAL_UART_Transmit_IT(&huart3, data, size);
-		HAL_GPIO_TogglePin(TEST_LED_GPIO_Port, TEST_LED_Pin);
-	}
+
+//	systick_counter++;
+//	if(systick_counter>1000){
+//		systick_counter=0;
+//
+//		uint8_t size = sprintf(data, "Aa:%d B act:%d\nAt:%d Bt:%d\n", actual_speed_A, actual_speed_B, target_speed_A, target_speed_B);
+//		HAL_UART_Transmit_IT(&huart3, data, size);
+//		//HAL_GPIO_TogglePin(TEST_LED_GPIO_Port, TEST_LED_Pin);
+//	}
+
+
 //	//obroty krokowki w lewo
 //	if(stepper_direction==1){
 //		stepper_steps++;
@@ -594,10 +653,17 @@ uint32_t min_array(uint32_t array[], uint8_t size){
 	return tmp_min;
 }
 
+void set_initial_pwm(){
+	TIM1->CCR1=250;
+	TIM1->CCR2=0;
+	TIM1->CCR3=250;
+	TIM1->CCR4=0;
+}
+
 void parse_command(volatile char* command){
 	char function, parameter;
 	char value[4];
-	uint8_t t_data[6];
+	//uint8_t t_data[6];
 	uint8_t num_value;
 	function=command[0];
 	parameter=command[1];
@@ -605,12 +671,62 @@ void parse_command(volatile char* command){
 		value[c]=command[c+2];
 	}
 	num_value=atoi(value);
-	uint8_t size = sprintf(t_data,"C:%c, P:%c, V:%d\n",function, parameter, num_value);
-	HAL_UART_Transmit_IT(&huart3,t_data,size);
+//	uint8_t size = sprintf(t_data,"C:%c, P:%c, V:%d\n",function, parameter, num_value);
+//	HAL_UART_Transmit_IT(&huart3,t_data,size);
 	execute_command(function, parameter, num_value);
 }
 
+void set_speed_A(uint8_t A_speed){
+	if(A_speed==0){
+			TIM1->CCR1=250;
+			TIM1->CCR2=0;
+			enable_A_speed_regulation=0;
+	}
+	else{
+		if(A_speed>100){
+			target_speed_A = A_speed - 100;
+			motor_A_direction = 1;
+		}
+		else{
+			target_speed_A = A_speed;
+			motor_A_direction=0;
+		}
+		target_speed_A = A_speed;
+		enable_A_speed_regulation = 1;
+	}
+}
+
+void set_speed_B(uint8_t B_speed){
+	target_speed_B = B_speed;
+	if(B_speed==0){
+			TIM1->CCR3=250;
+			TIM1->CCR4=0;
+			enable_B_speed_regulation=0;
+	}
+	else{
+		if(B_speed>100){
+			target_speed_B = B_speed - 100;
+			motor_B_direction = 1;
+		}
+		else{
+			target_speed_B = B_speed;
+			motor_B_direction = 0;
+		}
+		enable_B_speed_regulation = 1;
+	}
+}
+
+void set_speed_linear(uint8_t linear_speed){
+	set_speed_A(linear_speed);
+	set_speed_B(linear_speed);
+}
+
+void set_speed_rotary(uint8_t rotary_speed){
+
+}
+
 void move_forward(uint8_t value){
+
 
 }
 
@@ -624,29 +740,6 @@ void turn_left(uint8_t value){
 
 void turn_right(uint8_t value){
 
-}
-
-void motor_A_speed(uint8_t value){
-	if(value==50){
-		TIM1->CCR1=100;
-		TIM1->CCR2=0;
-	}
-	else{
-		TIM1->CCR1=value;
-		TIM1->CCR2=value;
-	}
-
-}
-
-void motor_B_speed(uint8_t value){
-	if(value==50){
-		TIM1->CCR3=100;
-		TIM1->CCR4=0;
-	}
-	else{
-		TIM1->CCR3=value;
-		TIM1->CCR4=value;
-	}
 }
 
 void turret_left(uint8_t value){
@@ -665,12 +758,14 @@ void turret_down(uint8_t value){
 
 }
 
-void servo_A_position(uint8_t value){
-	TIM2->CCR1=value;
+void servo_A_position(uint8_t angle){
+	uint16_t pwm_value = 100 + (angle*125)/135;
+	TIM2->CCR1=pwm_value;
 }
 
-void servo_B_position(uint8_t value){
-	TIM2->CCR2=value;
+void servo_B_position(uint8_t angle){
+	uint16_t pwm_value = 100 + (angle*125)/135;
+	TIM2->CCR2=pwm_value;
 }
 
 void stepper_left(uint8_t value){
@@ -688,9 +783,10 @@ void stepper_position(uint8_t value){
 
 }
 
-void ms_delay(uint16_t time){
-	systick_counter=0;
-	while(systick_counter!=time);
+void delay_ms(uint16_t time){
+	delay_counter=0;
+	while(delay_counter!=time);
+	delay_counter=0;
 }
 
 void execute_command(char function, char parameter, uint8_t value){
@@ -707,11 +803,11 @@ void execute_command(char function, char parameter, uint8_t value){
 		break;
 
 		//ruch napedem A
-		case 'A': motor_A_speed(value);
+		case 'A': set_speed_A(value);
 		break;
 
 		//ruch napedem B
-		case 'B': motor_B_speed(value);
+		case 'B': set_speed_B(value);
 		break;
 
 		default: break;
