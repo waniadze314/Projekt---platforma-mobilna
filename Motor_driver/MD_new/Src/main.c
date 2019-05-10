@@ -55,12 +55,17 @@ uint8_t linear_direction;
 uint8_t rotary_direction;
 uint8_t r_data;
 uint8_t data[30];
-uint8_t stepper_final_position;
-const uint16_t step_high[]={STEPPER_D_Pin, STEPPER_A_Pin, STEPPER_C_Pin, STEPPER_B_Pin, STEPPER_D_Pin, STEPPER_A_Pin};
 
+uint8_t stepper_motion=0;
+volatile uint8_t  steps_counter=0;
+volatile uint16_t stepper_counter=0;
+const uint16_t step_high_a[]={STEPPER_A_Pin, STEPPER_B_Pin, STEPPER_B_Pin, STEPPER_A_Pin};
+const uint16_t step_high_b[]={STEPPER_C_Pin, STEPPER_C_Pin, STEPPER_D_Pin, STEPPER_D_Pin};
+const uint16_t step_low_a[]={STEPPER_B_Pin, STEPPER_A_Pin, STEPPER_A_Pin, STEPPER_B_Pin};
+const uint16_t step_low_b[]={STEPPER_D_Pin, STEPPER_D_Pin, STEPPER_C_Pin, STEPPER_C_Pin};
 volatile char command[6];
 volatile uint8_t command_counter=0;
-volatile int8_t stepper_direction=0;
+volatile uint8_t stepper_direction=0;
 volatile int8_t stepper_output=0;
 volatile uint16_t stepper_steps=0;
 volatile uint16_t encoder_one_pulses, encoder_two_pulses;
@@ -82,6 +87,7 @@ uint8_t enable_A_speed_regulation=0, enable_B_speed_regulation=0;
 volatile uint8_t target_speed_A, target_speed_B;
 const uint8_t speed_margin = 3;
 const uint8_t pwm_direction_offset = 125;
+const uint8_t proportional_gain = 2;
 
 
 /* USER CODE END PV */
@@ -99,7 +105,7 @@ void HAL_SYSTICK_Callback(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void parse_command(volatile char* command);
 void execute_command(char function, char parameter, uint8_t value);
-void set_initial_pwm();
+void stop_motor_AB();
 //instrukcje sterujace
 void set_speed_linear(uint8_t linear_speed);
 void set_speed_rotary(uint8_t roatry_speed);
@@ -120,7 +126,8 @@ void servo_B_position(uint8_t angle);
 void stepper_left(uint8_t value);
 void stepper_right(uint8_t value);
 void stepper_position(uint8_t value);
-
+void set_stepper_output(uint8_t sequence_index);
+void stop_stepper();
 void delay_ms(uint16_t time);
 uint32_t min_array(uint32_t array[], uint8_t size);
 /* USER CODE END PFP */
@@ -174,17 +181,43 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim4,TIM_CHANNEL_ALL); //encoder B
   HAL_UART_Receive_IT(&huart3,&r_data,1); //begin receiving
 
-  set_initial_pwm();
+  //stop_motor_AB();
+  HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 0);
+  TIM1->CCR1=0;
+  TIM1->CCR2=0;
+  TIM1->CCR3=0;
+  TIM1->CCR4=0;
+  stop_stepper();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+//	  HAL_Delay(40);
+//	  		cnt++;
+//	  if(cnt<90){
+//	  	TIM1->CCR1++;
+//	  	TIM1->CCR2++;
+//	  	TIM1->CCR3++;
+//	  	TIM1->CCR4++;
+//	  }
+//	  else if(cnt>90){
+//	  	TIM1->CCR1--;
+//	  		TIM1->CCR2--;
+//	  		TIM1->CCR3--;
+//	  		TIM1->CCR4--;
+//	  }
+//	  if(cnt==180){
+//	  	cnt=0;
+//	  }
+
+  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
 
@@ -244,7 +277,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 255;
+  htim1.Init.Prescaler = 12;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 249;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -526,7 +559,18 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_SYSTICK_Callback(void){
-	//pomiar predkosci silnikow
+systick_counter++;
+
+//if(systick_counter>1000){
+//		systick_counter=0;
+//
+//		uint8_t size = sprintf(data, "Aa:%d B act:%d\nAt:%d Bt:%d\n", actual_speed_A, actual_speed_B, target_speed_A, target_speed_B);
+//		HAL_UART_Transmit_IT(&huart3, data, size);
+//		HAL_GPIO_TogglePin(TEST_LED_GPIO_Port, TEST_LED_Pin);
+//}
+
+/**********POMIAR PREDKOSCI SILNIKOW DC**********/
+
 	if(sampling == 0){
 		position_A_tmp_1=TIM3->CNT;
 		position_B_tmp_1=TIM4->CNT;
@@ -540,93 +584,96 @@ void HAL_SYSTICK_Callback(void){
 		measurement_counter++;
 		if(measurement_counter==sampling_window){
 			measurement_counter=0;
-			if(target_speed_A<50){
-				actual_speed_A = 255-min_array(position_dif_A, sampling_window);
-			}
-			else{
-				actual_speed_A = min_array(position_dif_A, sampling_window);
-			}
-			if(target_speed_B<50){
-				actual_speed_B = 255-min_array(position_dif_B, sampling_window);
-			}
-			else{
-				actual_speed_B = min_array(position_dif_B, sampling_window);
-			}
-
-/************************************************************************/
-
-
-//regulacja predkosci silnikow
-	if(enable_A_speed_regulation==1){
-			if(actual_speed_A-speed_margin<target_speed_A){
-				TIM1->CCR1++;
-				TIM1->CCR2++;
-			}else if(actual_speed_A+speed_margin>target_speed_A){
-				TIM1->CCR1--;
-				TIM1->CCR2--;
-			}
+			actual_speed_B = min_array(position_dif_B, sampling_window);
+		}
 	}
 
-	switch(motor_B_direction){
+/*************************************************/
+
+/**********REGULACJA PREDKOSCI SILNIKOW DC*********/
+
+
+////regulacja predkosci silnikow
+//	if(enable_A_speed_regulation==2){
+////			if(actual_speed_A-speed_margin<target_speed_A){
+////				TIM1->CCR1+(target_speed_A - actual_speed_A)/2;
+////				TIM1->CCR2+(target_speed_A - actual_speed_A)/2;
+////			}else if(actual_speed_A+speed_margin>target_speed_A){
+////				TIM1->CCR1-(target_speed_A - actual_speed_A)/2;
+////				TIM1->CCR2-(target_speed_A - actual_speed_A)/2;
+////			}
+//	}
+//
+//	switch(motor_B_direction){
+//		case 0:
+//			if(enable_B_speed_regulation==1  && target_speed_B-actual_speed_B>0){
+//					if(actual_speed_B < target_speed_B){
+//						TIM1->CCR3--;
+//						TIM1->CCR4--;
+//					}else if(actual_speed_B > target_speed_B){
+//						TIM1->CCR3++;
+//						TIM1->CCR4++;
+//					}
+//			}
+//			break;
+//		case 1:
+//			if(enable_B_speed_regulation==1 && target_speed_B-actual_speed_B>0){
+//						if(actual_speed_B < target_speed_B){
+//							TIM1->CCR3++;
+//							TIM1->CCR4++;
+//						}else if(actual_speed_B > target_speed_B){
+//							TIM1->CCR3--;
+//							TIM1->CCR4--;
+//						}
+//				}
+//
+//		}
+//		sampling=0;
+//	}
+//}
+
+
+/*************************************************/
+
+/**********STEROWANIE SILNIKIEM KROKOWYM**********/
+	//obroty krokowki w lewo
+if(stepper_motion==1){
+	HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 1);
+	stepper_counter++;
+	if(stepper_counter==5){
+		stepper_counter=0;
+		switch(stepper_direction){
 		case 0:
-			if(enable_B_speed_regulation==1){
-					if(actual_speed_B-speed_margin<target_speed_B){
-						TIM1->CCR3++;
-						TIM1->CCR4++;
-					}else if(actual_speed_B+speed_margin>target_speed_B){
-						TIM1->CCR3--;
-						TIM1->CCR4--;
-					}
+			set_stepper_output(steps_counter);
+			steps_counter++;
+			if(steps_counter==4){
+				steps_counter=0;
+				stepper_steps--;
+//				HAL_GPIO_TogglePin(TEST_LED_GPIO_Port,TEST_LED_Pin);
 			}
 			break;
-		case 1:
-			if(enable_B_speed_regulation==1){
-						if(actual_speed_B-speed_margin<target_speed_B){
-							TIM1->CCR3--;
-							TIM1->CCR4--;
-						}else if(actual_speed_B+speed_margin>target_speed_B){
-							TIM1->CCR3++;
-							TIM1->CCR4++;
-						}
-				}
 
+		case 1:
+			set_stepper_output(steps_counter);
+			steps_counter--;
+			if(steps_counter==0){
+				steps_counter=4;
+				stepper_steps--;
+//				HAL_GPIO_TogglePin(TEST_LED_GPIO_Port,TEST_LED_Pin);
+			}
+			break;
+		default : break;
 		}
-		sampling=0;
+
+	}
+	if(stepper_steps==0){
+		stepper_motion=0;
+		stop_stepper();
+		HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 0);
 	}
 }
-/**********************************************************************/
+/*************************************************/
 
-
-
-//	systick_counter++;
-//	if(systick_counter>1000){
-//		systick_counter=0;
-//
-//		uint8_t size = sprintf(data, "Aa:%d B act:%d\nAt:%d Bt:%d\n", actual_speed_A, actual_speed_B, target_speed_A, target_speed_B);
-//		HAL_UART_Transmit_IT(&huart3, data, size);
-//		//HAL_GPIO_TogglePin(TEST_LED_GPIO_Port, TEST_LED_Pin);
-//	}
-
-
-//	//obroty krokowki w lewo
-//	if(stepper_direction==1){
-//		stepper_steps++;
-//		stepper_output++;
-//		if(stepper_output==5){
-//			stepper_output=1;
-//		}
-//		HAL_GPIO_WritePin(GPIOB, step_high[stepper_steps-1],0);
-//		HAL_GPIO_WritePin(GPIOB,step_high[stepper_steps],1);
-//		if(stepper_steps==stepper_final_position){
-//			stepper_direction=0;
-//			stepper_steps=0;
-//		}
-//	}
-//	obroty krokowki w prawo
-//	else if(stepper_direction==-1){
-//		stepper_steps--;
-//
-//	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
@@ -653,17 +700,30 @@ uint32_t min_array(uint32_t array[], uint8_t size){
 	return tmp_min;
 }
 
-void set_initial_pwm(){
-	TIM1->CCR1=250;
-	TIM1->CCR2=0;
-	TIM1->CCR3=250;
-	TIM1->CCR4=0;
+void set_stepper_output(uint8_t sequence_index){
+	HAL_GPIO_WritePin(GPIOB, step_high_a[sequence_index], 1);
+	HAL_GPIO_WritePin(GPIOB, step_high_b[sequence_index],1);
+	HAL_GPIO_WritePin(GPIOB, step_low_a[sequence_index] ,0);
+	HAL_GPIO_WritePin(GPIOB, step_low_b[sequence_index] ,0);
 }
 
+void stop_motor_AB(){
+	TIM1->CCR1=pwm_direction_offset;
+	TIM1->CCR2=pwm_direction_offset;
+	TIM1->CCR3=pwm_direction_offset;
+	TIM1->CCR4=pwm_direction_offset;
+}
+
+void stop_stepper(){
+	HAL_GPIO_WritePin(GPIOB, STEPPER_A_Pin, 1);
+	HAL_GPIO_WritePin(GPIOB, STEPPER_B_Pin, 1);
+	HAL_GPIO_WritePin(GPIOB, STEPPER_C_Pin, 1);
+	HAL_GPIO_WritePin(GPIOB, STEPPER_D_Pin, 1);
+}
 void parse_command(volatile char* command){
 	char function, parameter;
 	char value[4];
-	//uint8_t t_data[6];
+	uint8_t t_data[6];
 	uint8_t num_value;
 	function=command[0];
 	parameter=command[1];
@@ -671,49 +731,54 @@ void parse_command(volatile char* command){
 		value[c]=command[c+2];
 	}
 	num_value=atoi(value);
-//	uint8_t size = sprintf(t_data,"C:%c, P:%c, V:%d\n",function, parameter, num_value);
-//	HAL_UART_Transmit_IT(&huart3,t_data,size);
+	uint8_t size = sprintf(t_data,"C:%c, P:%c, V:%d\n",function, parameter, num_value);
+	HAL_UART_Transmit_IT(&huart3,t_data,size);
 	execute_command(function, parameter, num_value);
 }
 
 void set_speed_A(uint8_t A_speed){
-	if(A_speed==0){
-			TIM1->CCR1=250;
-			TIM1->CCR2=0;
-			enable_A_speed_regulation=0;
-	}
-	else{
-		if(A_speed>100){
-			target_speed_A = A_speed - 100;
-			motor_A_direction = 1;
-		}
-		else{
-			target_speed_A = A_speed;
-			motor_A_direction=0;
-		}
-		target_speed_A = A_speed;
-		enable_A_speed_regulation = 1;
-	}
+
+	TIM1->CCR1=A_speed;
+	TIM1->CCR2=A_speed;
+//	if(A_speed==0){
+//			TIM1->CCR1=125;
+//			TIM1->CCR2=125;
+//			enable_A_speed_regulation=0;
+//	}
+//	else{
+//		if(A_speed>100){
+//			target_speed_A = A_speed - 100;
+//			motor_A_direction = 1;
+//		}
+//		else{
+//			target_speed_A = A_speed;
+//			motor_A_direction=0;
+//		}
+//		target_speed_A = A_speed;
+//		enable_A_speed_regulation = 1;
+//	}
 }
 
 void set_speed_B(uint8_t B_speed){
-	target_speed_B = B_speed;
-	if(B_speed==0){
-			TIM1->CCR3=250;
-			TIM1->CCR4=0;
-			enable_B_speed_regulation=0;
-	}
-	else{
-		if(B_speed>100){
-			target_speed_B = B_speed - 100;
-			motor_B_direction = 1;
-		}
-		else{
-			target_speed_B = B_speed;
-			motor_B_direction = 0;
-		}
-		enable_B_speed_regulation = 1;
-	}
+	TIM1->CCR3=B_speed;
+	TIM1->CCR4=B_speed;
+//	target_speed_B = B_speed;
+//	if(B_speed==0){
+//			TIM1->CCR3=125;
+//			TIM1->CCR4=125;
+//			enable_B_speed_regulation=0;
+//	}
+//	else{
+//		if(B_speed>100){
+//			target_speed_B = B_speed - 100;
+//			motor_B_direction = 1;
+//		}
+//		else{
+//			target_speed_B = B_speed;
+//			motor_B_direction = 0;
+//		}
+//		enable_B_speed_regulation = 1;
+//	}
 }
 
 void set_speed_linear(uint8_t linear_speed){
@@ -726,7 +791,6 @@ void set_speed_rotary(uint8_t rotary_speed){
 }
 
 void move_forward(uint8_t value){
-
 
 }
 
@@ -743,11 +807,11 @@ void turn_right(uint8_t value){
 }
 
 void turret_left(uint8_t value){
-
+	stepper_left(value);
 }
 
 void turret_right(uint8_t value){
-
+	stepper_right(value);
 }
 
 void turret_up(uint8_t value){
@@ -769,19 +833,24 @@ void servo_B_position(uint8_t angle){
 }
 
 void stepper_left(uint8_t value){
-	stepper_direction=1;
-	stepper_final_position=value;
+	stepper_motion=1;
+	stepper_direction=0;
+	stepper_steps=value;
+	steps_counter=0;
 }
+
 
 void stepper_right(uint8_t value){
-	stepper_direction=-1;
-	stepper_final_position=value;
+	stepper_motion=1;
+	stepper_direction=1;
+	stepper_steps=value;
+	steps_counter=4;
 }
 
-void stepper_position(uint8_t value){
-
-
-}
+//void stepper_position(uint8_t value){
+//
+//
+//}
 
 void delay_ms(uint16_t time){
 	delay_counter=0;
@@ -880,7 +949,7 @@ void execute_command(char function, char parameter, uint8_t value){
 		break;
 
 		//polozenie katowe
-		case 'A': stepper_position(value);
+		case 'A': //stepper_position(value);
 		break;
 
 		default: break;
