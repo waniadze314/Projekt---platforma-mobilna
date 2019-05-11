@@ -56,9 +56,13 @@ uint8_t rotary_direction;
 uint8_t r_data;
 uint8_t data[30];
 
+const uint8_t turret_position_servo_A[] = {126,30, 9};
+const uint8_t turret_position_servo_B[] = {0,100, 130};
+volatile uint8_t turret_config=1;
+
 uint8_t stepper_motion=0;
-volatile uint8_t  steps_counter=0;
-volatile uint16_t stepper_counter=0;
+volatile int8_t  steps_counter=0;
+volatile uint16_t stepper_time_counter=0;
 const uint16_t step_high_a[]={STEPPER_A_Pin, STEPPER_B_Pin, STEPPER_B_Pin, STEPPER_A_Pin};
 const uint16_t step_high_b[]={STEPPER_C_Pin, STEPPER_C_Pin, STEPPER_D_Pin, STEPPER_D_Pin};
 const uint16_t step_low_a[]={STEPPER_B_Pin, STEPPER_A_Pin, STEPPER_A_Pin, STEPPER_B_Pin};
@@ -111,6 +115,10 @@ void set_speed_linear(uint8_t linear_speed);
 void set_speed_rotary(uint8_t roatry_speed);
 void set_speed_A(uint8_t A_speed);
 void set_speed_B(uint8_t B_speed);
+void set_stepper_output(uint8_t sequence_index);
+void stop_stepper(void);
+void delay_ms(uint16_t time);
+uint32_t min_array(uint32_t array[], uint8_t size);
 //rozkazy
 void move_forward(uint8_t value);
 void move_backward(uint8_t value);
@@ -118,18 +126,14 @@ void turn_right(uint8_t value);
 void turn_left(uint8_t value);
 void turret_left(uint8_t value);
 void turret_right(uint8_t value);
-void turret_up(uint8_t value);
-void turret_down(uint8_t value);
-void turret_position(uint8_t value);
+void turret_up(void);
+void turret_down(void);
+void set_turret_position(void);
 void servo_A_position(uint8_t angle);
 void servo_B_position(uint8_t angle);
 void stepper_left(uint8_t value);
 void stepper_right(uint8_t value);
-void stepper_position(uint8_t value);
-void set_stepper_output(uint8_t sequence_index);
-void stop_stepper();
-void delay_ms(uint16_t time);
-uint32_t min_array(uint32_t array[], uint8_t size);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -188,6 +192,8 @@ int main(void)
   TIM1->CCR3=0;
   TIM1->CCR4=0;
   stop_stepper();
+
+  set_turret_position();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -639,9 +645,9 @@ systick_counter++;
 	//obroty krokowki w lewo
 if(stepper_motion==1){
 	HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 1);
-	stepper_counter++;
-	if(stepper_counter==5){
-		stepper_counter=0;
+	stepper_time_counter++;
+	if(stepper_time_counter==5){
+		stepper_time_counter=0;
 		switch(stepper_direction){
 		case 0:
 			set_stepper_output(steps_counter);
@@ -649,17 +655,15 @@ if(stepper_motion==1){
 			if(steps_counter==4){
 				steps_counter=0;
 				stepper_steps--;
-//				HAL_GPIO_TogglePin(TEST_LED_GPIO_Port,TEST_LED_Pin);
 			}
 			break;
 
 		case 1:
 			set_stepper_output(steps_counter);
 			steps_counter--;
-			if(steps_counter==0){
-				steps_counter=4;
+			if(steps_counter==-1){
+				steps_counter=3;
 				stepper_steps--;
-//				HAL_GPIO_TogglePin(TEST_LED_GPIO_Port,TEST_LED_Pin);
 			}
 			break;
 		default : break;
@@ -707,14 +711,14 @@ void set_stepper_output(uint8_t sequence_index){
 	HAL_GPIO_WritePin(GPIOB, step_low_b[sequence_index] ,0);
 }
 
-void stop_motor_AB(){
+void stop_motor_AB(void){
 	TIM1->CCR1=pwm_direction_offset;
 	TIM1->CCR2=pwm_direction_offset;
 	TIM1->CCR3=pwm_direction_offset;
 	TIM1->CCR4=pwm_direction_offset;
 }
 
-void stop_stepper(){
+void stop_stepper(void){
 	HAL_GPIO_WritePin(GPIOB, STEPPER_A_Pin, 1);
 	HAL_GPIO_WritePin(GPIOB, STEPPER_B_Pin, 1);
 	HAL_GPIO_WritePin(GPIOB, STEPPER_C_Pin, 1);
@@ -814,12 +818,25 @@ void turret_right(uint8_t value){
 	stepper_right(value);
 }
 
-void turret_up(uint8_t value){
-
+void turret_up(void){
+	turret_config++;
+	if(turret_config==3){
+		turret_config--;
+	}
+	set_turret_position();
 }
 
-void turret_down(uint8_t value){
+void turret_down(void){
+	turret_config--;
+	if(turret_config>3){
+		turret_config++;
+	}
+	set_turret_position();
+}
 
+void set_turret_position(){
+servo_A_position(turret_position_servo_A[turret_config]);
+servo_B_position(turret_position_servo_B[turret_config]);
 }
 
 void servo_A_position(uint8_t angle){
@@ -844,7 +861,7 @@ void stepper_right(uint8_t value){
 	stepper_motion=1;
 	stepper_direction=1;
 	stepper_steps=value;
-	steps_counter=4;
+	steps_counter=3;
 }
 
 //void stepper_position(uint8_t value){
@@ -908,16 +925,12 @@ void execute_command(char function, char parameter, uint8_t value){
 		case 'R': stepper_right(value);
 		break;
 
-		//pozycja poziomo
-		case 'P':
-		break;
-
 		//ruch w gore
-		case 'U': turret_up(value);
+		case 'U': turret_up();
 		break;
 
 		//ruch w dol
-		case 'D': turret_down(value);
+		case 'D': turret_down();
 		break;
 
 		default: break;
