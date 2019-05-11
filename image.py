@@ -1,15 +1,23 @@
 import time
 import cv2
 
-camera = cv2.VideoCapture(0)
-delay_time = 0.1
-image_index = 0
+class imagecapture:
+    def __init__(self):
+        self.camera = cv2.VideoCapture(0)
 
-if __name__ == "__main__":
-    while image_index < 100000:
-        return_value, image = camera.read()
-        cv2.imwrite('Images/data' + str(image_index) + '.png', image)
-        time.sleep(delay_time)
-        image_index += 1
+    def __del__(self):
+        del(self.camera)
 
-    del(camera)
+    def take_images(self,delay,number,path):
+        image_index = 0
+
+        while image_index < number:
+            _, frame = self.camera.read()
+            cv2.imwrite(path + 'data' + str(image_index) + '.png', frame)
+            time.sleep(delay)
+            image_index += 1
+
+    def show_frame(self):
+        _, frame = self.camera.read()
+        cv2.imshow("Current Frame",frame)
+        cv2.waitKey()

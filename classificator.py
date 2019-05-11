@@ -24,20 +24,20 @@ class Recognizer(nn.HybridBlock):
 
         self.net = nn.HybridSequential()
         with self.net.name_scope():
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=1,activation='relu'))
+            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
             self.net.add(nn.BatchNorm())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=1,activation='relu'))
+            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
             self.net.add(nn.BatchNorm())
             self.net.add(nn.MaxPool2D())
             self.net.add(nn.Dropout(0.2))
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=1,activation='relu'))
+            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
             self.net.add(nn.BatchNorm())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=1,activation='relu'))
+            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
             self.net.add(nn.BatchNorm())
             self.net.add(nn.MaxPool2D())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=1,activation='relu'))
+            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
             self.net.add(nn.BatchNorm())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=1,activation='relu'))
+            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
             self.net.add(nn.BatchNorm())
             self.net.add(nn.MaxPool2D())
             self.net.add(nn.Flatten())
@@ -61,7 +61,7 @@ class Recognizer(nn.HybridBlock):
             for data,label in train_iter:
                 # autograd.record() switches dropout layers on
                 with autograd.record():
-                    y_hat = self.net(data)
+                    y_hat = self.net(data.as_in_context(self.ctx))
                     loss_value = loss_function(y_hat,label).sum()
 
                 total_loss += loss_value.asscalar()
