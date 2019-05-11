@@ -21,3 +21,7 @@ class imagecapture:
         _, frame = self.camera.read()
         cv2.imshow("Current Frame",frame)
         cv2.waitKey()
+
+    def capture_frame(self):
+        _,frame = self.camera.read()
+        return frame

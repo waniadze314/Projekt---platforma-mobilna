@@ -20,8 +20,10 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from image import *
+from classificator import *
 
 if __name__ == "__main__":
-    capture = imagecapture()
+    camera = imagecapture()
 
-    capture.show_frame()
+    frame = camera.capture_frame()
+    
