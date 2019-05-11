@@ -46,6 +46,10 @@ TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+DMA_HandleTypeDef hdma_tim1_ch1;
+DMA_HandleTypeDef hdma_tim1_ch2;
+DMA_HandleTypeDef hdma_tim1_ch3;
+DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 UART_HandleTypeDef huart3;
 
@@ -55,6 +59,7 @@ uint8_t linear_direction;
 uint8_t rotary_direction;
 uint8_t r_data;
 uint8_t data[30];
+uint32_t pwm_duty_A, pwm_duty_B;
 
 const uint8_t turret_position_servo_A[] = {126,30, 9};
 const uint8_t turret_position_servo_B[] = {0,100, 130};
@@ -74,7 +79,6 @@ volatile int8_t stepper_output=0;
 volatile uint16_t stepper_steps=0;
 volatile uint16_t encoder_one_pulses, encoder_two_pulses;
 volatile uint16_t systick_counter=0;
-volatile uint16_t delay_counter;
 
 //speed measure variables
 volatile uint32_t position_A_tmp_1, position_A_tmp_2, position_B_tmp_1, position_B_tmp_2, counts_A, counts_B;
@@ -90,7 +94,7 @@ volatile uint8_t motor_B_direction=0;
 uint8_t enable_A_speed_regulation=0, enable_B_speed_regulation=0;
 volatile uint8_t target_speed_A, target_speed_B;
 const uint8_t speed_margin = 3;
-const uint8_t pwm_direction_offset = 125;
+const uint8_t pwm_stop = 125;
 const uint8_t proportional_gain = 2;
 
 
@@ -99,6 +103,7 @@ const uint8_t proportional_gain = 2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
@@ -169,16 +174,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); //DC motors
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2); //DC motors
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3); //DC motors
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); //DC motors
+  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, &pwm_duty_A, 1); //DC motors
+  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_2, &pwm_duty_A, 1); //DC motors
+  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_3, &pwm_duty_B, 1); //DC motors
+  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_4, &pwm_duty_B, 1); //DC motors
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); //servo A
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); //servo B
   HAL_TIM_Encoder_Start(&htim3,TIM_CHANNEL_ALL); //encoder A
@@ -187,12 +193,8 @@ int main(void)
 
   //stop_motor_AB();
   HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 0);
-  TIM1->CCR1=0;
-  TIM1->CCR2=0;
-  TIM1->CCR3=0;
-  TIM1->CCR4=0;
+  stop_motor_AB();
   stop_stepper();
-
   set_turret_position();
   /* USER CODE END 2 */
 
@@ -200,24 +202,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-//	  HAL_Delay(40);
-//	  		cnt++;
-//	  if(cnt<90){
-//	  	TIM1->CCR1++;
-//	  	TIM1->CCR2++;
-//	  	TIM1->CCR3++;
-//	  	TIM1->CCR4++;
-//	  }
-//	  else if(cnt>90){
-//	  	TIM1->CCR1--;
-//	  		TIM1->CCR2--;
-//	  		TIM1->CCR3--;
-//	  		TIM1->CCR4--;
-//	  }
-//	  if(cnt==180){
-//	  	cnt=0;
-//	  }
 
   }
     /* USER CODE END WHILE */
@@ -527,6 +511,30 @@ static void MX_USART3_UART_Init(void)
 
 }
 
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+  /* DMA1_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+
+}
+
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -712,10 +720,8 @@ void set_stepper_output(uint8_t sequence_index){
 }
 
 void stop_motor_AB(void){
-	TIM1->CCR1=pwm_direction_offset;
-	TIM1->CCR2=pwm_direction_offset;
-	TIM1->CCR3=pwm_direction_offset;
-	TIM1->CCR4=pwm_direction_offset;
+	pwm_duty_A = pwm_stop;
+	pwm_duty_B = pwm_stop;
 }
 
 void stop_stepper(void){
@@ -862,17 +868,6 @@ void stepper_right(uint8_t value){
 	stepper_direction=1;
 	stepper_steps=value;
 	steps_counter=3;
-}
-
-//void stepper_position(uint8_t value){
-//
-//
-//}
-
-void delay_ms(uint16_t time){
-	delay_counter=0;
-	while(delay_counter!=time);
-	delay_counter=0;
 }
 
 void execute_command(char function, char parameter, uint8_t value){
