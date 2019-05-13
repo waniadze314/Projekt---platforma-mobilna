@@ -17,31 +17,22 @@ import shutil
 import time
 from tqdm import tqdm
 
-class Recognizer(nn.HybridBlock):
+class NeuralNet(nn.HybridBlock):
     def __init__(self,**kwargs):
-        super(Recognizer,self).__init__(**kwargs)
+        super(NeuralNet,self).__init__(**kwargs)
         self.ctx = mx.cpu() 
 
         self.net = nn.HybridSequential()
         with self.net.name_scope():
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
-            self.net.add(nn.BatchNorm())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
-            self.net.add(nn.BatchNorm())
-            self.net.add(nn.MaxPool2D())
-            self.net.add(nn.Dropout(0.2))
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
-            self.net.add(nn.BatchNorm())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
-            self.net.add(nn.BatchNorm())
-            self.net.add(nn.MaxPool2D())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
-            self.net.add(nn.BatchNorm())
-            self.net.add(nn.Conv2D(3,kernel_size=3,padding=1,strides=10,activation='relu'))
-            self.net.add(nn.BatchNorm())
-            self.net.add(nn.MaxPool2D())
-            self.net.add(nn.Flatten())
-            self.net.add(nn.Dense(3,activation='relu'))
+            net.add(nn.Conv2D(48,kernel_size=3,padding=1,strides=10))
+            net.add(nn.Conv2D(12,kernel_size=3,padding=2,strides=4))
+            net.add(nn.Dense(12))
+            net.add(nn.Dropout(0.2))
+            net.add(nn.Dense(24))
+            net.add(nn.Dropout(0.2))
+            net.add(nn.Dense(12))
+            net.add(nn.Flatten())
+            net.add(nn.Dense(2))
             
             self.net.initialize(init.Xavier())
 
@@ -50,7 +41,7 @@ class Recognizer(nn.HybridBlock):
         self.loss_values = [] # array for training visualisation
 
     # Overwrite forward pass
-    def forward(self, x):
+    def hybrid_forward(self, x):
         return self.net(x)
 
     # train model
@@ -58,6 +49,8 @@ class Recognizer(nn.HybridBlock):
         total_loss = 0.0
         print("Training: ")
         for epoch in tqdm(range(1,num_epochs+1)):
+            if(epoch % 4 == 0):
+                trainer.set_learning_rate(trainer.learning_rate * 0.1)
             for data,label in train_iter:
                 # autograd.record() switches dropout layers on
                 with autograd.record():
@@ -68,6 +61,5 @@ class Recognizer(nn.HybridBlock):
                 loss_value.backward()
                 trainer.step(batch_size)
             
-            print('epoch %d, loss %.2f' % (epoch, total_loss))
             self.loss_values.append(total_loss)
             total_loss = 0.0

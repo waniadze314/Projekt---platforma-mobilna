@@ -16,17 +16,32 @@ import cv2
 import pandas as pd
 import shutil
 import time
+import datetime
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from image import *
-from classificator import *
+from Net import *
 
 if __name__ == "__main__":
-    camera = imagecapture()
+    Net = NeuralNet()
+    Net.load_parameters('Net.params')
 
-    frame = camera.capture_frame()
-    cv2.imshow("Frame",frame)
-    cv2.waitKey()
+    while True:
+        frames = []
+
+        camera = imagecapture()
+        frame = camera.capture_frame()
+        frames.append(frame)
+
+        frameset = mx.gluon.data.dataset.ArrayDataset(mx.nd.array(frame,dtype='float32',ctx=mx.cpu()))
+        frame_iter = mx.gluon.data.DataLoader(frameset,batch_size=1)
+
+        for data in frame_iter:
+            output = Net.net(data.as_in_context(Net.ctx))
+            if output.asnumpy().argmax() == 0:
+                f = open("times.txt","w+")
+                f.write(datetime.datetime.now())
+                f.close()
+
     
-    print(type(frame))
