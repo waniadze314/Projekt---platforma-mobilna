@@ -9,9 +9,21 @@ from classificator import *
 from reader import *
 
 if __name__ == '__main__':
-    data,labels = get_data('D:\PWR\Semestr6\Projekt\ClassG3')
+    data_true = get_data('D:\PWR\Semestr6\Projekt\Dataset\LabelsTrue')
+    labels_true = get_labels(True,data_true.shape[0])
+    data_false = get_data('D:\PWR\Semestr6\Projekt\Dataset\Labelsfalse')
+    labels_false = get_labels(False,data_false.shape[0])
+
+    data_true = mx.nd.array(data_true,dtype='float32',ctx=mx.cpu())
+    data_false = mx.nd.array(data_false,dtype='float32',ctx=mx.cpu())
+    data = mx.nd.concat(data_true,data_false,dim=0)
+
+    lables_true = mx.nd.array(labels_true,ctx=mx.cpu())
+    labels_false = mx.nd.array(labels_false,ctx=mx.cpu())
+    labels = mx.nd.concat(labels_true,labels_false,dim=0)
+
     dataset = get_gluon_dataset(data,labels)
-    train_iter = get_data_loader(dataset,1)
+    train_iter = get_data_loader(dataset,50)
 
     if len(sys.argv) == 1:
         deep_net = Recognizer()

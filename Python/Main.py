@@ -26,4 +26,7 @@ if __name__ == "__main__":
     camera = imagecapture()
 
     frame = camera.capture_frame()
+    cv2.imshow("Frame",frame)
+    cv2.waitKey()
     
+    print(type(frame))

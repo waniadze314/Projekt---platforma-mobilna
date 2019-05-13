@@ -13,9 +13,21 @@ def get_data(path):
         data.append(cv2.imread(i))
 
     data = np.stack(data) # array of shape [num_images, height, width, channel]
-    labels = np.zeros(len(data))
+    
+    return data
 
-    return data, labels
+def get_lables(label_type,size):
+    if label_type == True:
+		label = mx.nd.array([1,0],ctx=mx.cpu())
+	else:
+    	label = mx.nd.array([0,1],ctx=mx.cpu())
+
+	labels = mx.nd.zeros(shape=(size,2),ctx=mx.cpu())
+
+	for i in range(labels.shape[0]):
+    	labels[i] = mx.nd.array([0,1],ctx=mx.cpu())
+
+	return labels
 
 def get_batch(data, batch_size):
     data_size = data.shape[0]
@@ -29,3 +41,6 @@ def get_gluon_dataset(data,labels):
 
 def get_data_loader(dataset,batch_size):
     return mx.gluon.data.DataLoader(dataset,batch_size = batch_size)
+
+def augment_dataset(dataset):
+    ...
