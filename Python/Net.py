@@ -24,15 +24,15 @@ class NeuralNet(nn.HybridBlock):
 
         self.net = nn.HybridSequential()
         with self.net.name_scope():
-            net.add(nn.Conv2D(48,kernel_size=3,padding=1,strides=10))
-            net.add(nn.Conv2D(12,kernel_size=3,padding=2,strides=4))
-            net.add(nn.Dense(12))
-            net.add(nn.Dropout(0.2))
-            net.add(nn.Dense(24))
-            net.add(nn.Dropout(0.2))
-            net.add(nn.Dense(12))
-            net.add(nn.Flatten())
-            net.add(nn.Dense(2))
+            self.net.add(nn.Conv2D(48,kernel_size=3,padding=1,strides=10))
+            self.net.add(nn.Conv2D(12,kernel_size=3,padding=2,strides=4))
+            self.net.add(nn.Dense(12,activation='relu'))
+            self.net.add(nn.Dropout(0.2))
+            self.net.add(nn.Dense(24,activation='relu'))
+            self.net.add(nn.Dropout(0.2))
+            self.net.add(nn.Dense(12,activation='relu'))
+            self.net.add(nn.Flatten())
+            self.net.add(nn.Dense(2,activation='relu'))
             
             self.net.initialize(init.Xavier())
 
