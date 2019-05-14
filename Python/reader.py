@@ -27,29 +27,22 @@ def get_data_batch(path,size,offset):
 
 def get_labels(label_type,size):
 	if label_type == True:
-		label = mx.nd.array([1,0],ctx=mx.cpu())
+		label = 1
 	else:
-		label = mx.nd.array([0,1],ctx=mx.cpu())
+		label = 0
 	
-	labels = mx.nd.zeros(shape=(size,2),ctx=mx.cpu())
+	labels = mx.nd.zeros(size,ctx=mx.cpu())
 
-	for i in range(labels.shape[0]):		
-		labels[i] = mx.nd.array([0,1],ctx=mx.cpu())
+	for i in range(len(labels)):		
+		labels[i] = label
 
 	return labels
-
-def get_batch(data, batch_size):
-	data_size = data.shape[0]
-	indexes = list(range(data_size))
-	np.random.shuffle(indexes)
-	for i in range(0, data_size, batch_size):
-		yield data[indexes[i:i+batch_size]]
 
 def get_gluon_dataset(data,labels):
 	return mx.gluon.data.dataset.ArrayDataset(data,labels)
 
-def get_data_loader(dataset,batch_size):
-	return mx.gluon.data.DataLoader(dataset,batch_size = batch_size)
+def get_data_loader(dataset,batch_size,shuffle):
+	return mx.gluon.data.DataLoader(dataset,batch_size = batch_size,shuffle=shuffle)
 
 def augment_dataset(dataset):
 	...
