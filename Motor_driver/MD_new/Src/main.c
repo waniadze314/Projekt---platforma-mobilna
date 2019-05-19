@@ -46,10 +46,6 @@ TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-DMA_HandleTypeDef hdma_tim1_ch1;
-DMA_HandleTypeDef hdma_tim1_ch2;
-DMA_HandleTypeDef hdma_tim1_ch3;
-DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 UART_HandleTypeDef huart3;
 
@@ -58,8 +54,8 @@ const uint16_t delay_time=10;
 uint8_t linear_direction;
 uint8_t rotary_direction;
 uint8_t r_data;
-uint8_t data[30];
-uint32_t pwm_duty_A, pwm_duty_B;
+uint8_t data[50];
+//uint32_t pwm_duty_A=50, pwm_duty_B=50;
 
 const uint8_t turret_position_servo_A[] = {126,30, 9};
 const uint8_t turret_position_servo_B[] = {0,100, 130};
@@ -88,14 +84,22 @@ volatile uint8_t  measurement_counter=0;
 volatile uint8_t sampling;
 const uint8_t sampling_time=3;
 const uint8_t sampling_window=3;
+volatile int8_t dif_A;
+volatile int8_t dif_B;
 volatile uint8_t actual_speed_A, actual_speed_B;
-volatile uint8_t motor_A_direction=0;
-volatile uint8_t motor_B_direction=0;
-uint8_t enable_A_speed_regulation=0, enable_B_speed_regulation=0;
+volatile int8_t motor_A_direction=0;
+volatile int8_t motor_B_direction=0;
+volatile uint8_t enable_A_speed_regulation=0;
+volatile uint8_t enable_B_speed_regulation=0;
 volatile uint8_t target_speed_A, target_speed_B;
-const uint8_t speed_margin = 3;
-const uint8_t pwm_stop = 125;
-const uint8_t proportional_gain = 2;
+const uint8_t initial_pwm=50;
+const uint8_t positive_speed_limit_low=100;
+const uint8_t positive_speed_limit_high=109;
+const uint8_t negative_speed_limit_low=0;
+const uint8_t negative_speed_limit_high=9;
+const uint8_t max_pwm=100;
+const uint8_t min_pwm=0;
+const uint8_t axis_length=10;
 
 
 /* USER CODE END PV */
@@ -103,18 +107,19 @@ const uint8_t proportional_gain = 2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_SYSTICK_Callback(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void parse_command(volatile char* command);
 void execute_command(char function, char parameter, uint8_t value);
 void stop_motor_AB();
+void stop_motor_A();
+void stop_motor_B();
 //instrukcje sterujace
 void set_speed_linear(uint8_t linear_speed);
 void set_speed_rotary(uint8_t roatry_speed);
@@ -122,7 +127,6 @@ void set_speed_A(uint8_t A_speed);
 void set_speed_B(uint8_t B_speed);
 void set_stepper_output(uint8_t sequence_index);
 void stop_stepper(void);
-void delay_ms(uint16_t time);
 uint32_t min_array(uint32_t array[], uint8_t size);
 //rozkazy
 void move_forward(uint8_t value);
@@ -174,17 +178,16 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_USART3_UART_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, &pwm_duty_A, 1); //DC motors
-  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_2, &pwm_duty_A, 1); //DC motors
-  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_3, &pwm_duty_B, 1); //DC motors
-  HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_4, &pwm_duty_B, 1); //DC motors
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); //DC motors
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2); //DC motors
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3); //DC motors
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); //DC motors
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); //servo A
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); //servo B
   HAL_TIM_Encoder_Start(&htim3,TIM_CHANNEL_ALL); //encoder A
@@ -192,7 +195,7 @@ int main(void)
   HAL_UART_Receive_IT(&huart3,&r_data,1); //begin receiving
 
   //stop_motor_AB();
-  HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 0);
+  HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 1);
   stop_motor_AB();
   stop_stepper();
   set_turret_position();
@@ -267,9 +270,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 12;
+  htim1.Init.Prescaler = 6399;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 249;
+  htim1.Init.Period = 99;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -511,30 +514,6 @@ static void MX_USART3_UART_Init(void)
 
 }
 
-/** 
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void) 
-{
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
-  /* DMA1_Channel3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-  /* DMA1_Channel4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
-  /* DMA1_Channel6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
-
-}
-
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -574,14 +553,11 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_SYSTICK_Callback(void){
 systick_counter++;
-
-//if(systick_counter>1000){
-//		systick_counter=0;
-//
-//		uint8_t size = sprintf(data, "Aa:%d B act:%d\nAt:%d Bt:%d\n", actual_speed_A, actual_speed_B, target_speed_A, target_speed_B);
-//		HAL_UART_Transmit_IT(&huart3, data, size);
-//		HAL_GPIO_TogglePin(TEST_LED_GPIO_Port, TEST_LED_Pin);
-//}
+if(systick_counter==1000){
+	systick_counter=0;
+	uint8_t size=sprintf(data, "PWM A: %d --- PWM B: %d\n", TIM1->CCR1, TIM1->CCR3);
+	HAL_UART_Transmit_IT(&huart3,data, size);
+}
 
 /**********POMIAR PREDKOSCI SILNIKOW DC**********/
 
@@ -593,58 +569,62 @@ systick_counter++;
 	if(sampling == sampling_time){
 		position_A_tmp_2=TIM3->CNT;
 		position_B_tmp_2=TIM4->CNT;
-		position_dif_A[measurement_counter]=position_A_tmp_2-position_A_tmp_1;
-		position_dif_B[measurement_counter]=position_B_tmp_2-position_B_tmp_1;
+		position_dif_A[measurement_counter]=abs(position_A_tmp_2-position_A_tmp_1);
+		position_dif_B[measurement_counter]=abs(position_B_tmp_2-position_B_tmp_1);
 		measurement_counter++;
+		sampling = 0;
 		if(measurement_counter==sampling_window){
 			measurement_counter=0;
+			actual_speed_A = min_array(position_dif_A, sampling_window);
 			actual_speed_B = min_array(position_dif_B, sampling_window);
-		}
-	}
+//		}
+//	}
 
 /*************************************************/
 
 /**********REGULACJA PREDKOSCI SILNIKOW DC*********/
 
+//regulacja silnika A
+	if(enable_A_speed_regulation==1){
+		dif_A = target_speed_A - actual_speed_A;
 
-////regulacja predkosci silnikow
-//	if(enable_A_speed_regulation==2){
-////			if(actual_speed_A-speed_margin<target_speed_A){
-////				TIM1->CCR1+(target_speed_A - actual_speed_A)/2;
-////				TIM1->CCR2+(target_speed_A - actual_speed_A)/2;
-////			}else if(actual_speed_A+speed_margin>target_speed_A){
-////				TIM1->CCR1-(target_speed_A - actual_speed_A)/2;
-////				TIM1->CCR2-(target_speed_A - actual_speed_A)/2;
-////			}
-//	}
-//
-//	switch(motor_B_direction){
-//		case 0:
-//			if(enable_B_speed_regulation==1  && target_speed_B-actual_speed_B>0){
-//					if(actual_speed_B < target_speed_B){
-//						TIM1->CCR3--;
-//						TIM1->CCR4--;
-//					}else if(actual_speed_B > target_speed_B){
-//						TIM1->CCR3++;
-//						TIM1->CCR4++;
-//					}
-//			}
-//			break;
-//		case 1:
-//			if(enable_B_speed_regulation==1 && target_speed_B-actual_speed_B>0){
-//						if(actual_speed_B < target_speed_B){
-//							TIM1->CCR3++;
-//							TIM1->CCR4++;
-//						}else if(actual_speed_B > target_speed_B){
-//							TIM1->CCR3--;
-//							TIM1->CCR4--;
-//						}
-//				}
-//
-//		}
-//		sampling=0;
-//	}
-//}
+		if(motor_A_direction==1){
+			if(dif_A>0){
+				if(TIM1->CCR1<max_pwm){
+					TIM1->CCR1++;
+					TIM1->CCR2++;
+				}
+			}
+			else if(dif_A<0){
+				if(TIM1->CCR1>min_pwm){
+					TIM1->CCR1--;
+					TIM1->CCR2--;
+				}
+			}
+			else if(dif_A==0){
+				enable_A_speed_regulation=0;
+			}
+
+		}
+		else if(motor_A_direction==-1){
+			if(dif_A>0){
+				if(TIM1->CCR1>min_pwm){
+					TIM1->CCR1--;
+					TIM1->CCR2--;
+				}
+			}
+			else if(dif_A<0){
+				if(TIM1->CCR1<max_pwm){
+					TIM1->CCR1++;
+					TIM1->CCR2++;
+				}
+			}
+			else if(dif_A==0){
+				enable_A_speed_regulation=0;
+			}
+		}
+	}}}
+
 
 
 /*************************************************/
@@ -652,7 +632,7 @@ systick_counter++;
 /**********STEROWANIE SILNIKIEM KROKOWYM**********/
 	//obroty krokowki w lewo
 if(stepper_motion==1){
-	HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 1);
+	HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 0);
 	stepper_time_counter++;
 	if(stepper_time_counter==5){
 		stepper_time_counter=0;
@@ -681,7 +661,7 @@ if(stepper_motion==1){
 	if(stepper_steps==0){
 		stepper_motion=0;
 		stop_stepper();
-		HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 0);
+		HAL_GPIO_WritePin(TEST_LED_GPIO_Port, TEST_LED_Pin, 1);
 	}
 }
 /*************************************************/
@@ -719,9 +699,21 @@ void set_stepper_output(uint8_t sequence_index){
 	HAL_GPIO_WritePin(GPIOB, step_low_b[sequence_index] ,0);
 }
 
+void stop_motor_A(void){
+	TIM1->CCR1 = 0;
+	TIM1->CCR2 = 100;
+	motor_A_direction=0;
+}
+
+ void stop_motor_B(void){
+	 TIM1->CCR3 = 0;
+	 TIM1->CCR4 = 100;
+	 motor_B_direction=0;
+ }
+
 void stop_motor_AB(void){
-	pwm_duty_A = pwm_stop;
-	pwm_duty_B = pwm_stop;
+	stop_motor_A();
+	stop_motor_B();
 }
 
 void stop_stepper(void){
@@ -742,36 +734,45 @@ void parse_command(volatile char* command){
 	}
 	num_value=atoi(value);
 	uint8_t size = sprintf(t_data,"C:%c, P:%c, V:%d\n",function, parameter, num_value);
-	HAL_UART_Transmit_IT(&huart3,t_data,size);
+//	HAL_UART_Transmit_IT(&huart3,t_data,size);
 	execute_command(function, parameter, num_value);
 }
 
+//zakres predkosci 0-10, pierwsza cyfra kierunek 1-przod, brak - tyl
 void set_speed_A(uint8_t A_speed){
-
-	TIM1->CCR1=A_speed;
-	TIM1->CCR2=A_speed;
-//	if(A_speed==0){
-//			TIM1->CCR1=125;
-//			TIM1->CCR2=125;
-//			enable_A_speed_regulation=0;
-//	}
-//	else{
-//		if(A_speed>100){
-//			target_speed_A = A_speed - 100;
-//			motor_A_direction = 1;
-//		}
-//		else{
-//			target_speed_A = A_speed;
-//			motor_A_direction=0;
-//		}
-//		target_speed_A = A_speed;
-//		enable_A_speed_regulation = 1;
-//	}
+	if(A_speed==positive_speed_limit_low || A_speed==negative_speed_limit_low){
+		stop_motor_A();
+		enable_A_speed_regulation = 0;
+		target_speed_A=0;
+	}
+	else if(A_speed>positive_speed_limit_low && A_speed<positive_speed_limit_high){
+		if((motor_A_direction==-1) || (motor_A_direction==0)){
+			TIM1->CCR1=initial_pwm;
+			TIM1->CCR2=initial_pwm;
+		}
+		motor_A_direction = 1;//przod
+		target_speed_A = A_speed-100;
+		enable_A_speed_regulation = 1;
+	}
+	else if(A_speed>negative_speed_limit_low && A_speed <negative_speed_limit_high){
+		if((motor_A_direction==1) || (motor_A_direction==0)){
+			TIM1->CCR1=initial_pwm;
+			TIM1->CCR2=initial_pwm;
+		}
+		motor_A_direction = -1;//tyl
+		target_speed_A = A_speed;
+		enable_A_speed_regulation = 1;
+	}
 }
 
 void set_speed_B(uint8_t B_speed){
-	TIM1->CCR3=B_speed;
-	TIM1->CCR4=B_speed;
+	if(B_speed==50){
+		stop_motor_B();
+	}
+	else{
+		TIM1->CCR3 = B_speed;
+		TIM1->CCR4 = B_speed;
+	}
 //	target_speed_B = B_speed;
 //	if(B_speed==0){
 //			TIM1->CCR3=125;
