@@ -1,9 +1,19 @@
-from PIL import Image
+import cv2
+import glob
+import numpy as np
+from matplotlib import pyplot as plt
+from tqdm import tqdm
 
-def count_pixels(image):
-    green = 0
-    for pixel in image.getdata():
-        if pixel == (0,1,0):
-            green += 1
+camera = cv2.VideoCapture(0)
+img = cv2.imread("D:\PWR\Semestr6\Projekt\TestDataset\LabelFalse\data0.png")
+canny = cv2.Canny(img,160,100)
+cv2.imshow('',canny)
+cv2.waitKey()
 
-    return green
+source_path = 'D:\PWR\Semestr6\Projekt\Dataset\LabelFalse'
+index = 0
+for i in tqdm(glob.glob(source_path + '\*.png', recursive=True)):
+    img = cv2.imread(i)
+    img = cv2.Canny(img,100,80)
+    cv2.imwrite('D:\PWR\Semestr6\Projekt\AugmentedDataset\Canny\LabelFalse\data' + str(index) + '.png',img)
+    index += 1

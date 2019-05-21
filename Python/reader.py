@@ -25,16 +25,29 @@ def get_data_batch(path,size,offset):
 
 	return data
 
+# def get_labels(label_type,size):
+# 	if label_type == True:
+# 		label = 1
+# 	else:
+# 		label = 0
+	
+# 	labels = mx.nd.zeros(size,ctx=mx.cpu())
+
+# 	for i in range(len(labels)):		
+# 		labels[i] = label
+
+# 	return labels
+
 def get_labels(label_type,size):
 	if label_type == True:
-		label = 1
+		label = mx.nd.array([1,0],ctx=mx.cpu())
 	else:
-		label = 0
+		label = mx.nd.array([0,1],ctx=mx.cpu())
 	
-	labels = mx.nd.zeros(size,ctx=mx.cpu())
+	labels = mx.nd.zeros(shape=(size,2),ctx=mx.cpu())
 
-	for i in range(len(labels)):		
-		labels[i] = label
+	for i in range(labels.shape[0]):		
+		labels[i] = mx.nd.array([0,1],ctx=mx.cpu())
 
 	return labels
 
