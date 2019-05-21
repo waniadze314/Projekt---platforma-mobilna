@@ -19,29 +19,22 @@ import time
 import datetime
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import glob
 
 from image import *
-from Net import *
+from LSRecognizer import *
 
 if __name__ == "__main__":
-    Net = NeuralNet()
-    Net.load_parameters('Net.params')
-
-    while True:
-        frames = []
-
-        camera = imagecapture()
-        frame = camera.capture_frame()
-        frames.append(frame)
-
-        frameset = mx.gluon.data.dataset.ArrayDataset(mx.nd.array(frame,dtype='float32',ctx=mx.cpu()))
-        frame_iter = mx.gluon.data.DataLoader(frameset,batch_size=1)
-
-        for data in frame_iter:
-            output = Net.net(data.as_in_context(Net.ctx))
-            if output.asnumpy().argmax() == 0:
-                f = open("times.txt","w+")
-                f.write(datetime.datetime.now())
-                f.close()
-
+    template = cv2.imread("D:\PWR\Semestr6\Projekt\datatemplate.png")
+    path = "D:\PWR\Semestr6\Projekt\LSDataset"
     
+    for i in glob.glob(path + '\*.png',recursive = True):
+        image = cv2.imread(i)
+        cv2.imshow('',image)
+        cv2.waitKey()
+
+        match = ls_match(image,template)
+        if get_threshold(match) >= 0.5:
+            print("True")
+        else:
+            print("False")
