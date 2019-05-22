@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 
 def ls_match(image,template):
-    template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-    template = cv2.Canny(template, 10, 25)
+    template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY) # set to grey
+    template = cv2.Canny(template, 10, 25) # edge detection 
     (h,w) = template.shape[:2] # get width and height
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) # set to grey 
@@ -17,15 +17,19 @@ def ls_match(image,template):
             break
 
         canny = cv2.Canny(resized_image, 10, 25) # detect egdes
-        match = cv2.matchTemplate(canny, template, cv2.TM_CCOEFF)
+        match = cv2.matchTemplate(canny, template, cv2.TM_CCOEFF) # match with cross correation
     
     return match
 
 def get_threshold(match):
-    detecting = 0
+    detected = 0
+    # loop through match image data
     for col in match:
         for row in col:
-            if row > 0.8:
-                detecting += 1 
+            # if cross correation is bigger than threshold
+            # mark pixel as matching
+            if row > 0.8: 
+                detected += 1 
 
+    # return percantage of matched pixels
     return float(detecting/(match.shape[0]*match.shape[1]))
