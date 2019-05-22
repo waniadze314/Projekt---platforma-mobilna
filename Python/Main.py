@@ -1,16 +1,6 @@
 import sys
 sys.path.insert(0,'..')
 
-import mxnet as mx
-from mxnet import nd
-from mxnet import autograd
-from mxnet import gluon
-from mxnet import init
-
-from mxnet.gluon import data as gluon_data
-from mxnet.gluon import loss as gluon_loss
-from mxnet.gluon import nn 
-
 import os
 import cv2
 import pandas as pd
@@ -24,17 +14,37 @@ import glob
 from image import *
 from LSRecognizer import *
 
-if __name__ == "__main__":
-    template = cv2.imread("D:\PWR\Semestr6\Projekt\datatemplate.png")
-    path = "D:\PWR\Semestr6\Projekt\LSDataset"
-    
-    for i in glob.glob(path + '\*.png',recursive = True):
-        image = cv2.imread(i)
-        cv2.imshow('',image)
-        cv2.waitKey()
+delay = 1
 
+if __name__ == "__main__":
+    camera = cv2.VideoCapture(1)
+    template = cv2.imread("D:\LSDataset\datatemplate.png")
+    counter = 0
+    threshold = 0.5
+    detected_index = 1
+    start_time = time.time()
+    while True:
+        _,image = camera.read()
         match = ls_match(image,template)
-        if get_threshold(match) >= 0.5:
-            print("True")
+        if get_threshold(match) > threshold:
+            counter += 1
+            threshold += 0.1
+            delay += 1
+
         else:
-            print("False")
+            counter = 0
+            threshold = 0.5
+            delay = 1
+
+        print(get_threshold(match))
+        if counter >= 3:
+            cv2.imshow('',image)
+            cv2.imwrite('detected'+str(detected_index)+'.png')
+            print(time.time() - start_time) 
+            detected_index += 1
+            cv2.waitKey()
+            threshold = 0.5
+            counter = 0 
+            delay = 1
+        
+        time.sleep(delay)
