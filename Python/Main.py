@@ -3,11 +3,9 @@ sys.path.insert(0,'..')
 
 import os
 import cv2
-import pandas as pd
 import shutil
 import time
 import datetime
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 import glob
 
@@ -44,7 +42,7 @@ if __name__ == "__main__":
         # print(get_threshold(match))
         
         # if image was detected
-        if counter >= detection constat:
+        if counter >= detection_constant:
             # display image
             # cv2.imshow('',image)
             # cv2.waitKey()
