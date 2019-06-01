@@ -16,7 +16,6 @@ from LSRecognizer import *
 
 def recognize(camera,template):
     delay = 1 # delay time in seconds
-    file_delay = 5.0
     counter = 0 # counter collecting detected images
     threshold = 0.5 # initial threshold for gradient recognizer
     detected_index = 1 # utility index for saving detected images to directory
@@ -58,12 +57,13 @@ def recognize(camera,template):
     return False
 
 if __name__ == "__main__":
+    file_delay = 5.0
     camera = cv2.VideoCapture(0)
-    template = cv2.imread("E:\LSDataset\datatemplate.png")
+    templateG = cv2.imread("C:\\Users\\Krzysiek\\Documents\\GitHub\\Projekt---platforma-mobilna\\datatemplate.png")
     signal = True
 
     if signal == True:
-        out = recognize(camera,template)
+        out = recognize(camera,templateG)
         if out == True:
             with open("LabelG.txt","w") as f:
                 f.write("True")
@@ -71,6 +71,3 @@ if __name__ == "__main__":
     time.sleep(file_delay)
     with open("LabelG.txt","w") as f:
         f.write("False")
-    
-
-    
