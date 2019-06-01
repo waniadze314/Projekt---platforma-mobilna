@@ -3,11 +3,9 @@ sys.path.insert(0,'..')
 
 import os
 import cv2
-import pandas as pd
 import shutil
 import time
 import datetime
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 import glob
 
@@ -41,7 +39,11 @@ def recognize(camera,template):
         print(get_threshold(match))
         
         # if image was detected
+<<<<<<< HEAD
         if counter >= detection_constat:
+=======
+        if counter >= detection_constant:
+>>>>>>> dc471eacbda4c9ef23a5b83040d1e3f9f143df9c
             # display image
             # cv2.imshow('',image)
             # # cv2.waitKey()
