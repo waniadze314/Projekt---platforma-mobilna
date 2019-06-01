@@ -14,11 +14,9 @@ import glob
 from image import *
 from LSRecognizer import *
 
-if __name__ == "__main__":
-    camera = cv2.VideoCapture(1)
-    template = cv2.imread("D:\LSDataset\datatemplate.png")
-    # set constants
+def recognize(camera,template):
     delay = 1 # delay time in seconds
+    file_delay = 5.0
     counter = 0 # counter collecting detected images
     threshold = 0.5 # initial threshold for gradient recognizer
     detected_index = 1 # utility index for saving detected images to directory
@@ -27,7 +25,7 @@ if __name__ == "__main__":
     detection_constat = 3 
     start_time = time.time() # start time 
     # Main loop
-    while True:
+    while time.time() - start_time <= 20.0:
         _,image = camera.read() # take picture
         match = ls_match(image,template) # match with gradient recognizer
         # if image is matched update counter
@@ -41,21 +39,38 @@ if __name__ == "__main__":
             threshold = 0.5
             delay = 1
 
-        # print(get_threshold(match))
+        print(get_threshold(match))
         
         # if image was detected
-        if counter >= detection constat:
+        if counter >= detection_constat:
             # display image
             # cv2.imshow('',image)
-            # cv2.waitKey()
-            cv2.imwrite('detected'+str(detected_index)+'.png')
-            # save image to file
-            with open("times.txt","a") as times_file:
-                times_file.write(str(time.time() - start_time))
-            # reset threshold counter and delay
-            detected_index += 1
-            threshold = 0.5
-            counter = 0 
-            delay = 1
+            # # cv2.waitKey()
+            # cv2.imwrite('detected'+str(detected_index)+'.png')
+            # # save image to file
+            # with open("times.txt","a") as times_file:
+            #     times_file.write(str(time.time() - start_time))
+            
+            return True
         # wait 
         time.sleep(delay)
+
+    return False
+
+if __name__ == "__main__":
+    camera = cv2.VideoCapture(0)
+    template = cv2.imread("E:\LSDataset\datatemplate.png")
+    signal = True
+
+    if signal == True:
+        out = recognize(camera,template)
+        if out == True:
+            with open("LabelG.txt","w") as f:
+                f.write("True")
+
+    time.sleep(file_delay)
+    with open("LabelG.txt","w") as f:
+        f.write("False")
+    
+
+    

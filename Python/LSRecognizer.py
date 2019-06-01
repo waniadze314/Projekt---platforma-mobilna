@@ -32,4 +32,4 @@ def get_threshold(match):
                 detected += 1 
 
     # return percantage of matched pixels
-    return float(detecting/(match.shape[0]*match.shape[1]))
+    return float(detected/(match.shape[0]*match.shape[1]))
