@@ -19,7 +19,7 @@ def recognize(camera,template):
     detected_index = 1 # utility index for saving detected images to directory
     # greater value gives more certanity for detecting image 
     # but lower probability forlow quality images
-    detection_constat = 3 
+    detection_constant = 3 
     start_time = time.time() # start time 
     # Main loop
     while time.time() - start_time <= 20.0:
@@ -39,11 +39,7 @@ def recognize(camera,template):
         print(get_threshold(match))
         
         # if image was detected
-<<<<<<< HEAD
-        if counter >= detection_constat:
-=======
         if counter >= detection_constant:
->>>>>>> dc471eacbda4c9ef23a5b83040d1e3f9f143df9c
             # display image
             # cv2.imshow('',image)
             # # cv2.waitKey()
@@ -61,7 +57,7 @@ def recognize(camera,template):
 if __name__ == "__main__":
     file_delay = 5.0
     camera = cv2.VideoCapture(0)
-    templateG = cv2.imread("C:\\Users\\Krzysiek\\Documents\\GitHub\\Projekt---platforma-mobilna\\datatemplate.png")
+    templateG = cv2.imread("C:\\Users\\Krzysiek\\Documents\\GitHub\\TeamProject\\datatemplate.png")
     signal = True
 
     if signal == True:
